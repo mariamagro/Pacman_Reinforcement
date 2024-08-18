@@ -349,31 +349,31 @@ class QLearningAgent(BustersAgent):
 
         distancer = self.distancer
 
-        ghost_pos = self.closestGhost(state)
+        element_pos = self.closestElement(state)
 
         if "North" in state.getLegalPacmanActions():
             up = (state.getPacmanPosition()[0], state.getPacmanPosition()[1] + 1)
-            pacmanup = distancer.getDistance(up, ghost_pos)
+            pacmanup = distancer.getDistance(up, element_pos)
 
         else:
             pacmanup = sys.maxsize
 
         if "South" in state.getLegalPacmanActions():
             down = (state.getPacmanPosition()[0], state.getPacmanPosition()[1] - 1)
-            pacmandown = distancer.getDistance(down, ghost_pos)
+            pacmandown = distancer.getDistance(down, element_pos)
         else:
             pacmandown = sys.maxsize
 
         if "East" in state.getLegalPacmanActions():
             right = (state.getPacmanPosition()[0] + 1, state.getPacmanPosition()[1])
-            pacmanright = distancer.getDistance(right, ghost_pos)
+            pacmanright = distancer.getDistance(right, element_pos)
 
         else:
             pacmanright = sys.maxsize
 
         if "West" in state.getLegalPacmanActions():
             left = (state.getPacmanPosition()[0] - 1, state.getPacmanPosition()[1])
-            pacmanleft = distancer.getDistance(left, ghost_pos)
+            pacmanleft = distancer.getDistance(left, element_pos)
 
         else:
             pacmanleft = sys.maxsize
@@ -394,7 +394,7 @@ class QLearningAgent(BustersAgent):
 
         # get actual distance and discretize it
 
-        pacman_dist = distancer.getDistance(state.getPacmanPosition(), ghost_pos)
+        pacman_dist = distancer.getDistance(state.getPacmanPosition(), element_pos)
 
         if 0 <= pacman_dist <= 3:
             attributes.append(0)
@@ -503,7 +503,6 @@ class QLearningAgent(BustersAgent):
         position = self.computePosition(state)
         action_column = self.actions[action]
         max_q_nextstate = self.computeValueFromQValues(nextState)
-        print(reward)
         self.q_table[position][action_column] = (1-self.alpha) * q + self.alpha*(reward + self.discount * max_q_nextstate)
 
 
@@ -515,38 +514,26 @@ class QLearningAgent(BustersAgent):
         "Return the highest q value for a given state"
         return self.computeValueFromQValues(state)
 
-    def closestGhost(self, state):
+    def countFood(self, gameState):
+        food = 0
+        for width in gameState.data.food:
+            for height in width:
+                if(height == True):
+                    food = food + 1
+        return food
+
+    def closestElement(self, state):
         "Return the coordinates of the closest ghost"
 
-        if True in state.getFood():
+        if self.countFood(state) > 0:
 
-            # PACDOTS
             pacdots = []
+
             grid_food = state.getFood()
-            matrix = []
-            transpose = []
-
             for i in range(grid_food.height):
-                actual_line = grid_food[i]
-
-                actual_line = actual_line[::-1]
-
-                matrix.append(actual_line)
-
-            num_rows = len(matrix)
-            num_cols = len(matrix[0])
-
-            transpose = [[0 for j in range(num_rows)] for i in range(num_cols)]
-
-            for i in range(len(matrix)):
-                for j in range(len(matrix[i])):
-                    transpose[j][i] = matrix[i][j]
-
-            for i in range(num_rows):
-                for j in range(num_cols):
-                    if transpose[i][j]:
-                        place = (i + 1, j + 1)
-                        pacdots.append(place)
+                for j in range(grid_food.width):
+                    if state.hasFood(j, i):
+                        pacdots.append((j, i))
 
         else:
 
@@ -580,7 +567,10 @@ class QLearningAgent(BustersAgent):
                 nextstate.getPacmanPosition()[1] != (nextstate.data.layout.height - 2):
             reward -= 10
 
-        if state.getScore() < nextstate.getScore():
+        if nextstate.getScore() == state.getScore() + 99:
+            reward += 100
+
+        if nextstate.getScore() == state.getScore() + 199:
             reward += 50
 
         return reward
